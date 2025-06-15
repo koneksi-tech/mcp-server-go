@@ -1,0 +1,70 @@
+package main
+
+import (
+	"bufio"
+	"encoding/json"
+	"fmt"
+	"log"
+	"os"
+
+	"github.com/joho/godotenv"
+	"github.com/koneksi/mcp-server/internal/mcp"
+	"github.com/koneksi/mcp-server/internal/koneksi"
+)
+
+func main() {
+	// Load environment variables
+	if err := godotenv.Load(); err != nil {
+		log.Println("No .env file found")
+	}
+
+	// Initialize Koneksi client
+	clientID := os.Getenv("KONEKSI_API_CLIENT_ID")
+	clientSecret := os.Getenv("KONEKSI_API_CLIENT_SECRET")
+	baseURL := os.Getenv("KONEKSI_API_BASE_URL")
+	
+	if baseURL == "" {
+		baseURL = "https://koneksi-tyk-gateway-3rvca.ondigitalocean.app"
+	}
+
+	if clientID == "" || clientSecret == "" {
+		log.Fatal("KONEKSI_API_CLIENT_ID and KONEKSI_API_CLIENT_SECRET must be set")
+	}
+
+	koneksiClient := koneksi.NewClient(baseURL, clientID, clientSecret, "")
+	
+	// Create MCP server
+	server := mcp.NewServer("koneksi-storage", "1.0.0", koneksiClient)
+
+	// Setup stdin/stdout communication
+	scanner := bufio.NewScanner(os.Stdin)
+	encoder := json.NewEncoder(os.Stdout)
+
+	log.Println("Koneksi MCP server started")
+
+	// Main message loop
+	for scanner.Scan() {
+		request := scanner.Text()
+		response, err := server.HandleRequest(request)
+		if err != nil {
+			log.Printf("Error handling request: %v", err)
+			errorResponse := map[string]interface{}{
+				"jsonrpc": "2.0",
+				"error": map[string]interface{}{
+					"code":    -32603,
+					"message": err.Error(),
+				},
+			}
+			encoder.Encode(errorResponse)
+			continue
+		}
+
+		if err := encoder.Encode(response); err != nil {
+			log.Printf("Error encoding response: %v", err)
+		}
+	}
+
+	if err := scanner.Err(); err != nil {
+		log.Printf("Error reading stdin: %v", err)
+	}
+}
