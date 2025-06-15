@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Koneksi MCP Bridge UI</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 30px;
+        }
+        
+        .section {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .section h2 {
+            color: #34495e;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+        
+        .tool-buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        button {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.3s;
+        }
+        
+        button:hover {
+            background: #2980b9;
+        }
+        
+        button:disabled {
+            background: #95a5a6;
+            cursor: not-allowed;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #555;
+        }
+        
+        input[type="text"],
+        textarea,
+        select {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+        
+        .response-area {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
+            padding: 15px;
+            margin-top: 20px;
+            white-space: pre-wrap;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .response-area.error {
+            background: #fee;
+            border-color: #fcc;
+            color: #c00;
+        }
+        
+        .loading {
+            text-align: center;
+            color: #666;
+            padding: 20px;
+        }
+        
+        .status {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .status.connected {
+            background: #2ecc71;
+            color: white;
+        }
+        
+        .status.disconnected {
+            background: #e74c3c;
+            color: white;
+        }
+        
+        .tab-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .tab-button {
+            background: #ecf0f1;
+            color: #34495e;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            border: none;
+            transition: all 0.3s;
+        }
+        
+        .tab-button.active {
+            background: #3498db;
+            color: white;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .file-info {
+            background: #e8f4f8;
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Koneksi MCP Bridge UI</h1>
+        
+        <div style="text-align: center; margin: 20px 0;">
+            <a href="/chat.html" style="background: #3498db; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">
+                💬 Open Chat Interface
+            </a>
+        </div>
+        
+        <div id="status" class="status disconnected">Disconnected</div>
+        
+        <div class="section">
+            <h2>Quick Actions</h2>
+            <div class="tool-buttons">
+                <button onclick="listTools()">List Available Tools</button>
+                <button onclick="listDirectories()">List Directories</button>
+                <button onclick="showCreateDirectory()">Create Directory</button>
+                <button onclick="showUploadFile()">Upload File</button>
+                <button onclick="showSearchFiles()">Search Files</button>
+            </div>
+        </div>
+        
+        <div class="section">
+            <div class="tab-buttons">
+                <button class="tab-button active" onclick="switchTab('simple')">Simple Mode</button>
+                <button class="tab-button" onclick="switchTab('advanced')">Advanced Mode</button>
+            </div>
+            
+            <!-- Simple Mode -->
+            <div id="simple-tab" class="tab-content active">
+                <div id="action-form"></div>
+            </div>
+            
+            <!-- Advanced Mode -->
+            <div id="advanced-tab" class="tab-content">
+                <h2>Send Custom MCP Request</h2>
+                <div class="form-group">
+                    <label for="method">Method:</label>
+                    <input type="text" id="method" placeholder="e.g., tools/list, tools/call" value="tools/list">
+                </div>
+                <div class="form-group">
+                    <label for="params">Parameters (JSON):</label>
+                    <textarea id="params" placeholder='{"name": "tool_name", "arguments": {...}}'>{}</textarea>
+                </div>
+                <button onclick="sendCustomRequest()">Send Request</button>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2>Response</h2>
+            <div id="response" class="response-area">No response yet. Click a button above to start.</div>
+        </div>
+    </div>
+    
+    <script>
+        const API_BASE = 'http://localhost:8081';
+        let currentDirectories = [];
+        
+        // Check connection status
+        async function checkConnection() {
+            try {
+                const response = await fetch(`${API_BASE}/health`);
+                if (response.ok) {
+                    updateStatus(true);
+                } else {
+                    updateStatus(false);
+                }
+            } catch (error) {
+                updateStatus(false);
+            }
+        }
+        
+        function updateStatus(connected) {
+            const status = document.getElementById('status');
+            if (connected) {
+                status.textContent = 'Connected';
+                status.className = 'status connected';
+            } else {
+                status.textContent = 'Disconnected';
+                status.className = 'status disconnected';
+            }
+        }
+        
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            if (tab === 'simple') {
+                document.querySelector('.tab-button:nth-child(1)').classList.add('active');
+                document.getElementById('simple-tab').classList.add('active');
+            } else {
+                document.querySelector('.tab-button:nth-child(2)').classList.add('active');
+                document.getElementById('advanced-tab').classList.add('active');
+            }
+        }
+        
+        function showResponse(data, isError = false) {
+            const responseDiv = document.getElementById('response');
+            responseDiv.textContent = JSON.stringify(data, null, 2);
+            responseDiv.className = isError ? 'response-area error' : 'response-area';
+        }
+        
+        function showLoading() {
+            document.getElementById('response').innerHTML = '<div class="loading">Loading...</div>';
+        }
+        
+        async function sendRequest(endpoint, method = 'GET', body = null) {
+            showLoading();
+            try {
+                const options = {
+                    method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                };
+                
+                if (body) {
+                    options.body = JSON.stringify(body);
+                }
+                
+                const response = await fetch(`${API_BASE}${endpoint}`, options);
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    showResponse(data.result || data);
+                    return data;
+                } else {
+                    showResponse(data, true);
+                    return null;
+                }
+            } catch (error) {
+                showResponse({ error: error.message }, true);
+                return null;
+            }
+        }
+        
+        async function listTools() {
+            const data = await sendRequest('/api/v1/mcp/tools/list');
+            if (data && data.result && data.result.tools) {
+                const tools = data.result.tools;
+                let formatted = "Available Tools:\n\n";
+                tools.forEach(tool => {
+                    formatted += `📦 ${tool.name}\n`;
+                    formatted += `   ${tool.description}\n\n`;
+                });
+                showResponse(formatted);
+            }
+        }
+        
+        async function listDirectories() {
+            const data = await sendRequest('/api/v1/mcp/tools/call', 'POST', {
+                name: 'list_directories',
+                arguments: {}
+            });
+            
+            if (data && data.result && data.result.content) {
+                const content = data.result.content[0].text;
+                showResponse(content);
+                
+                // Parse directories for later use
+                const lines = content.split('\n');
+                currentDirectories = [];
+                lines.forEach(line => {
+                    const match = line.match(/- (.+) \(ID: (.+)\)/);
+                    if (match) {
+                        currentDirectories.push({
+                            name: match[1],
+                            id: match[2]
+                        });
+                    }
+                });
+            }
+        }
+        
+        function showCreateDirectory() {
+            const form = `
+                <h3>Create New Directory</h3>
+                <div class="form-group">
+                    <label for="dir-name">Directory Name:</label>
+                    <input type="text" id="dir-name" placeholder="My Directory">
+                </div>
+                <div class="form-group">
+                    <label for="dir-desc">Description (optional):</label>
+                    <input type="text" id="dir-desc" placeholder="Description of the directory">
+                </div>
+                <button onclick="createDirectory()">Create Directory</button>
+            `;
+            document.getElementById('action-form').innerHTML = form;
+        }
+        
+        async function createDirectory() {
+            const name = document.getElementById('dir-name').value;
+            const description = document.getElementById('dir-desc').value;
+            
+            if (!name) {
+                alert('Please enter a directory name');
+                return;
+            }
+            
+            await sendRequest('/api/v1/mcp/tools/call', 'POST', {
+                name: 'create_directory',
+                arguments: {
+                    name: name,
+                    description: description
+                }
+            });
+        }
+        
+        function showUploadFile() {
+            const form = `
+                <h3>Upload File</h3>
+                <div class="form-group">
+                    <label for="file-path">File Path:</label>
+                    <input type="text" id="file-path" placeholder="/path/to/file.txt">
+                </div>
+                <div class="form-group">
+                    <label for="dir-id">Directory ID (optional):</label>
+                    <select id="dir-id">
+                        <option value="">No directory</option>
+                        ${currentDirectories.map(dir => 
+                            `<option value="${dir.id}">${dir.name}</option>`
+                        ).join('')}
+                    </select>
+                </div>
+                <button onclick="uploadFile()">Upload File</button>
+                <div class="file-info">
+                    Note: The file path should be accessible from the server.
+                </div>
+            `;
+            document.getElementById('action-form').innerHTML = form;
+            
+            // Load directories if not already loaded
+            if (currentDirectories.length === 0) {
+                listDirectories();
+            }
+        }
+        
+        async function uploadFile() {
+            const filePath = document.getElementById('file-path').value;
+            const directoryId = document.getElementById('dir-id').value;
+            
+            if (!filePath) {
+                alert('Please enter a file path');
+                return;
+            }
+            
+            const args = { filePath };
+            if (directoryId) {
+                args.directoryId = directoryId;
+            }
+            
+            await sendRequest('/api/v1/mcp/tools/call', 'POST', {
+                name: 'upload_file',
+                arguments: args
+            });
+        }
+        
+        function showSearchFiles() {
+            const form = `
+                <h3>Search Files in Directory</h3>
+                <div class="form-group">
+                    <label for="search-dir-id">Directory:</label>
+                    <select id="search-dir-id">
+                        <option value="">Select a directory</option>
+                        ${currentDirectories.map(dir => 
+                            `<option value="${dir.id}">${dir.name}</option>`
+                        ).join('')}
+                    </select>
+                </div>
+                <button onclick="searchFiles()">Search Files</button>
+            `;
+            document.getElementById('action-form').innerHTML = form;
+            
+            // Load directories if not already loaded
+            if (currentDirectories.length === 0) {
+                listDirectories();
+            }
+        }
+        
+        async function searchFiles() {
+            const directoryId = document.getElementById('search-dir-id').value;
+            
+            if (!directoryId) {
+                alert('Please select a directory');
+                return;
+            }
+            
+            await sendRequest('/api/v1/mcp/tools/call', 'POST', {
+                name: 'search_files',
+                arguments: {
+                    directoryId: directoryId
+                }
+            });
+        }
+        
+        async function sendCustomRequest() {
+            const method = document.getElementById('method').value;
+            const paramsText = document.getElementById('params').value;
+            
+            try {
+                const params = JSON.parse(paramsText);
+                await sendRequest('/api/v1/mcp/request', 'POST', {
+                    method: method,
+                    params: params
+                });
+            } catch (error) {
+                showResponse({ error: 'Invalid JSON in parameters: ' + error.message }, true);
+            }
+        }
+        
+        // Initialize
+        checkConnection();
+        setInterval(checkConnection, 5000); // Check connection every 5 seconds
+    </script>
+</body>
+</html>

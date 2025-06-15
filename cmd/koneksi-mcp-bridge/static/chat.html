@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Koneksi MCP Chat Interface</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f0f2f5;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .header {
+            background: #2c3e50;
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .header h1 {
+            font-size: 1.5em;
+            font-weight: 500;
+        }
+        
+        .status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+        }
+        
+        .status-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #e74c3c;
+        }
+        
+        .status-indicator.connected {
+            background: #2ecc71;
+        }
+        
+        .chat-container {
+            flex: 1;
+            display: flex;
+            max-width: 1400px;
+            width: 100%;
+            margin: 0 auto;
+            background: white;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        
+        .sidebar {
+            width: 300px;
+            background: #f8f9fa;
+            border-right: 1px solid #e9ecef;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        
+        .sidebar h3 {
+            font-size: 1.1em;
+            margin-bottom: 15px;
+            color: #34495e;
+        }
+        
+        .tool-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .tool-item {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .tool-item:hover {
+            background: #e3f2fd;
+            border-color: #2196f3;
+        }
+        
+        .tool-name {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+        
+        .tool-desc {
+            font-size: 12px;
+            color: #7f8c8d;
+        }
+        
+        .chat-main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .messages-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .message {
+            display: flex;
+            gap: 10px;
+            animation: fadeIn 0.3s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .message.user {
+            flex-direction: row-reverse;
+        }
+        
+        .message-avatar {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: white;
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+        
+        .message.system .message-avatar {
+            background: #3498db;
+        }
+        
+        .message.user .message-avatar {
+            background: #2ecc71;
+        }
+        
+        .message-content {
+            background: #f1f3f5;
+            padding: 12px 16px;
+            border-radius: 18px;
+            max-width: 70%;
+            word-wrap: break-word;
+        }
+        
+        .message.user .message-content {
+            background: #2196f3;
+            color: white;
+        }
+        
+        .message-content pre {
+            background: rgba(0,0,0,0.05);
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin: 10px 0;
+            font-size: 13px;
+        }
+        
+        .message.user .message-content pre {
+            background: rgba(255,255,255,0.2);
+        }
+        
+        .file-info {
+            background: #e3f2fd;
+            border: 1px solid #90caf9;
+            padding: 10px;
+            border-radius: 8px;
+            margin: 10px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .file-icon {
+            width: 40px;
+            height: 40px;
+            background: #2196f3;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+        
+        .file-details {
+            flex: 1;
+        }
+        
+        .file-name {
+            font-weight: 600;
+            color: #1976d2;
+        }
+        
+        .file-size {
+            font-size: 12px;
+            color: #666;
+        }
+        
+        .input-area {
+            border-top: 1px solid #e9ecef;
+            padding: 20px;
+            background: #f8f9fa;
+        }
+        
+        .input-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .input-wrapper {
+            display: flex;
+            gap: 10px;
+            align-items: flex-end;
+        }
+        
+        .input-field {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .message-input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid #ddd;
+            border-radius: 25px;
+            font-size: 14px;
+            resize: none;
+            min-height: 44px;
+            max-height: 120px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        
+        .message-input:focus {
+            border-color: #2196f3;
+        }
+        
+        .file-upload-area {
+            border: 2px dashed #ccc;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            background: #fafafa;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: none;
+        }
+        
+        .file-upload-area.active {
+            display: block;
+        }
+        
+        .file-upload-area:hover {
+            border-color: #2196f3;
+            background: #e3f2fd;
+        }
+        
+        .file-upload-area.dragover {
+            border-color: #2196f3;
+            background: #e3f2fd;
+        }
+        
+        .attached-files {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 10px;
+        }
+        
+        .attached-file {
+            background: #e3f2fd;
+            border: 1px solid #90caf9;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .remove-file {
+            cursor: pointer;
+            color: #f44336;
+            font-weight: bold;
+        }
+        
+        button {
+            background: #2196f3;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        button:hover:not(:disabled) {
+            background: #1976d2;
+        }
+        
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .toggle-upload {
+            background: #607d8b;
+            padding: 8px 16px;
+        }
+        
+        .toggle-upload.active {
+            background: #455a64;
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .quick-actions {
+            display: flex;
+            gap: 10px;
+            padding: 10px 0;
+            border-bottom: 1px solid #e9ecef;
+            margin-bottom: 15px;
+        }
+        
+        .quick-action {
+            font-size: 12px;
+            padding: 5px 12px;
+            background: #ecf0f1;
+            color: #2c3e50;
+            border-radius: 15px;
+        }
+        
+        .quick-action:hover {
+            background: #bdc3c7;
+        }
+        
+        .error-message {
+            background: #fee;
+            border: 1px solid #fcc;
+            color: #c00;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Koneksi MCP Chat</h1>
+        <div class="status">
+            <span id="status-text">Checking connection...</span>
+            <div id="status-indicator" class="status-indicator"></div>
+        </div>
+    </div>
+    
+    <div class="chat-container">
+        <div class="sidebar">
+            <h3>Available Tools</h3>
+            <div class="quick-actions">
+                <button class="quick-action" onclick="listDirectories()">List Dirs</button>
+                <button class="quick-action" onclick="refreshTools()">Refresh</button>
+            </div>
+            <div id="tool-list" class="tool-list">
+                <div class="loading"></div>
+            </div>
+        </div>
+        
+        <div class="chat-main">
+            <div id="messages" class="messages-container">
+                <div class="message system">
+                    <div class="message-avatar">K</div>
+                    <div class="message-content">
+                        Welcome to Koneksi MCP Chat! I can help you manage files and directories. 
+                        Try asking me to list directories, upload files, or create new directories.
+                    </div>
+                </div>
+            </div>
+            
+            <div class="input-area">
+                <div class="input-controls">
+                    <button class="toggle-upload" onclick="toggleFileUpload()">
+                        📎 Attach Files
+                    </button>
+                </div>
+                
+                <div id="file-upload-area" class="file-upload-area">
+                    <input type="file" id="file-input" style="display: none;" multiple onchange="handleFileSelect(event)">
+                    <p>Drop files here or click to select</p>
+                    <small>You can attach multiple files</small>
+                </div>
+                
+                <div id="attached-files" class="attached-files"></div>
+                
+                <div class="input-wrapper">
+                    <div class="input-field">
+                        <textarea 
+                            id="message-input" 
+                            class="message-input" 
+                            placeholder="Type a message or describe what you want to do..."
+                            onkeypress="handleKeyPress(event)"
+                            oninput="autoResize(this)"
+                        ></textarea>
+                    </div>
+                    <button onclick="sendMessage()" id="send-button">
+                        Send
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        const API_BASE = 'http://localhost:8081';
+        let attachedFiles = [];
+        let availableTools = [];
+        let isConnected = false;
+        
+        // Initialize
+        window.onload = () => {
+            checkConnection();
+            loadTools();
+            setupFileUpload();
+            document.getElementById('message-input').focus();
+        };
+        
+        // Connection check
+        async function checkConnection() {
+            try {
+                const response = await fetch(`${API_BASE}/health`);
+                updateConnectionStatus(response.ok);
+            } catch (error) {
+                updateConnectionStatus(false);
+            }
+        }
+        
+        function updateConnectionStatus(connected) {
+            isConnected = connected;
+            const statusText = document.getElementById('status-text');
+            const statusIndicator = document.getElementById('status-indicator');
+            
+            if (connected) {
+                statusText.textContent = 'Connected';
+                statusIndicator.classList.add('connected');
+            } else {
+                statusText.textContent = 'Disconnected';
+                statusIndicator.classList.remove('connected');
+            }
+            
+            document.getElementById('send-button').disabled = !connected;
+        }
+        
+        // Tool management
+        async function loadTools() {
+            try {
+                const response = await fetch(`${API_BASE}/api/v1/mcp/tools/list`);
+                const data = await response.json();
+                
+                if (data.success && data.result && data.result.tools) {
+                    availableTools = data.result.tools;
+                    displayTools(availableTools);
+                }
+            } catch (error) {
+                console.error('Failed to load tools:', error);
+                document.getElementById('tool-list').innerHTML = 
+                    '<div class="error-message">Failed to load tools</div>';
+            }
+        }
+        
+        function displayTools(tools) {
+            const toolList = document.getElementById('tool-list');
+            toolList.innerHTML = tools.map(tool => `
+                <div class="tool-item" onclick="insertTool('${tool.name}')">
+                    <div class="tool-name">${tool.name}</div>
+                    <div class="tool-desc">${tool.description}</div>
+                </div>
+            `).join('');
+        }
+        
+        function insertTool(toolName) {
+            const input = document.getElementById('message-input');
+            const tool = availableTools.find(t => t.name === toolName);
+            
+            if (tool) {
+                let message = `Use ${toolName}: ${tool.description}`;
+                if (toolName === 'upload_file' && attachedFiles.length > 0) {
+                    message = `Upload the attached file(s) to Koneksi`;
+                } else if (toolName === 'create_directory') {
+                    message = `Create a new directory called "`;
+                } else if (toolName === 'list_directories') {
+                    message = `List all directories`;
+                }
+                
+                input.value = message;
+                input.focus();
+                if (message.includes('"')) {
+                    input.setSelectionRange(message.indexOf('"') + 1, message.indexOf('"') + 1);
+                }
+            }
+        }
+        
+        function refreshTools() {
+            loadTools();
+        }
+        
+        // File upload handling
+        function toggleFileUpload() {
+            const uploadArea = document.getElementById('file-upload-area');
+            const toggleBtn = document.querySelector('.toggle-upload');
+            
+            uploadArea.classList.toggle('active');
+            toggleBtn.classList.toggle('active');
+        }
+        
+        function setupFileUpload() {
+            const uploadArea = document.getElementById('file-upload-area');
+            
+            uploadArea.addEventListener('click', () => {
+                document.getElementById('file-input').click();
+            });
+            
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadArea.classList.add('dragover');
+            });
+            
+            uploadArea.addEventListener('dragleave', () => {
+                uploadArea.classList.remove('dragover');
+            });
+            
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.classList.remove('dragover');
+                handleFiles(e.dataTransfer.files);
+            });
+        }
+        
+        function handleFileSelect(event) {
+            handleFiles(event.target.files);
+        }
+        
+        function handleFiles(files) {
+            for (let file of files) {
+                attachedFiles.push(file);
+            }
+            updateAttachedFiles();
+        }
+        
+        function updateAttachedFiles() {
+            const container = document.getElementById('attached-files');
+            container.innerHTML = attachedFiles.map((file, index) => `
+                <div class="attached-file">
+                    📄 ${file.name} (${formatFileSize(file.size)})
+                    <span class="remove-file" onclick="removeFile(${index})">×</span>
+                </div>
+            `).join('');
+        }
+        
+        function removeFile(index) {
+            attachedFiles.splice(index, 1);
+            updateAttachedFiles();
+        }
+        
+        function formatFileSize(bytes) {
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+            return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+        }
+        
+        // Message handling
+        async function sendMessage() {
+            const input = document.getElementById('message-input');
+            const message = input.value.trim();
+            
+            if (!message && attachedFiles.length === 0) return;
+            
+            // Add user message
+            addMessage(message, 'user');
+            input.value = '';
+            autoResize(input);
+            
+            // Process the message
+            await processUserMessage(message);
+            
+            // Clear attached files after processing
+            attachedFiles = [];
+            updateAttachedFiles();
+        }
+        
+        async function processUserMessage(message) {
+            const lowerMessage = message.toLowerCase();
+            
+            try {
+                if (lowerMessage.includes('list') && lowerMessage.includes('director')) {
+                    await callTool('list_directories', {});
+                } else if (lowerMessage.includes('create') && lowerMessage.includes('director')) {
+                    // Extract directory name
+                    const match = message.match(/["']([^"']+)["']/);
+                    if (match) {
+                        await callTool('create_directory', {
+                            name: match[1],
+                            description: 'Created via chat interface'
+                        });
+                    } else {
+                        addMessage('Please specify a directory name in quotes, like: Create a directory called "My Folder"', 'system');
+                    }
+                } else if ((lowerMessage.includes('upload') || attachedFiles.length > 0) && attachedFiles.length > 0) {
+                    // Handle file upload
+                    for (let file of attachedFiles) {
+                        await uploadFile(file);
+                    }
+                } else if (lowerMessage.includes('search') && lowerMessage.includes('file')) {
+                    // Extract directory ID if mentioned
+                    addMessage('Please specify a directory ID to search in. You can list directories first to get the IDs.', 'system');
+                } else {
+                    // Try to understand the intent
+                    addMessage('I can help you with:\n- List directories\n- Create a new directory\n- Upload files (attach them first)\n- Search files in a directory\n\nWhat would you like to do?', 'system');
+                }
+            } catch (error) {
+                addMessage(`Error: ${error.message}`, 'system');
+            }
+        }
+        
+        async function callTool(toolName, args) {
+            addMessage(`Running ${toolName}...`, 'system');
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/v1/mcp/tools/call`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        name: toolName,
+                        arguments: args
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success && data.result && data.result.content) {
+                    const content = data.result.content[0].text;
+                    addMessage(content, 'system');
+                } else {
+                    addMessage(`Error: ${data.error || 'Unknown error'}`, 'system');
+                }
+            } catch (error) {
+                addMessage(`Error calling ${toolName}: ${error.message}`, 'system');
+            }
+        }
+        
+        async function uploadFile(file) {
+            addMessage(`Uploading ${file.name}...`, 'system');
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            // Directory ID is optional - leave empty to upload without directory
+            const directorySelect = prompt('Enter directory ID (optional, press Cancel to skip):');
+            if (directorySelect && directorySelect.trim() !== '') {
+                formData.append('directory_id', directorySelect.trim());
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/v1/upload`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    const fileInfo = `
+                        <div class="file-info">
+                            <div class="file-icon">✅</div>
+                            <div class="file-details">
+                                <div class="file-name">${data.filename}</div>
+                                <div class="file-size">${formatFileSize(data.size)}</div>
+                            </div>
+                        </div>
+                    `;
+                    
+                    if (data.result && data.result.content) {
+                        addMessage(`${fileInfo}\n${data.result.content[0].text}`, 'system');
+                    } else {
+                        addMessage(`${fileInfo}\nFile uploaded successfully!`, 'system');
+                    }
+                } else {
+                    addMessage(`Failed to upload ${file.name}: ${data.error}`, 'system');
+                }
+            } catch (error) {
+                addMessage(`Error uploading ${file.name}: ${error.message}`, 'system');
+            }
+        }
+        
+        async function listDirectories() {
+            await callTool('list_directories', {});
+        }
+        
+        function addMessage(text, type) {
+            const messagesContainer = document.getElementById('messages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${type}`;
+            
+            const avatar = type === 'user' ? 'U' : 'K';
+            
+            messageDiv.innerHTML = `
+                <div class="message-avatar">${avatar}</div>
+                <div class="message-content">${text}</div>
+            `;
+            
+            messagesContainer.appendChild(messageDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+        
+        function handleKeyPress(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                sendMessage();
+            }
+        }
+        
+        function autoResize(textarea) {
+            textarea.style.height = 'auto';
+            textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
+        }
+        
+        // Periodic connection check
+        setInterval(checkConnection, 5000);
+    </script>
+</body>
+</html>

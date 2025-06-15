@@ -7,8 +7,8 @@ import (
 	"os"
 
 	"github.com/joho/godotenv"
-	"github.com/koneksi/mcp-server/internal/mcp"
 	"github.com/koneksi/mcp-server/internal/koneksi"
+	"github.com/koneksi/mcp-server/internal/mcp"
 )
 
 func main() {
@@ -21,17 +21,18 @@ func main() {
 	clientID := os.Getenv("KONEKSI_API_CLIENT_ID")
 	clientSecret := os.Getenv("KONEKSI_API_CLIENT_SECRET")
 	baseURL := os.Getenv("KONEKSI_API_BASE_URL")
-	
+
 	if baseURL == "" {
-		baseURL = "https://koneksi-tyk-gateway-3rvca.ondigitalocean.app"
+		baseURL = "https://staging.koneksi.co.kr"
 	}
 
 	if clientID == "" || clientSecret == "" {
 		log.Fatal("KONEKSI_API_CLIENT_ID and KONEKSI_API_CLIENT_SECRET must be set")
 	}
 
-	koneksiClient := koneksi.NewClient(baseURL, clientID, clientSecret, "")
-	
+	directoryID := os.Getenv("KONEKSI_DIRECTORY_ID")
+	koneksiClient := koneksi.NewClient(baseURL, clientID, clientSecret, directoryID)
+
 	// Create MCP server
 	server := mcp.NewServer("koneksi-storage", "1.0.0", koneksiClient)
 

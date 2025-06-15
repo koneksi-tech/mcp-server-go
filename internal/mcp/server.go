@@ -242,6 +242,9 @@ func (s *Server) uploadFile(args map[string]interface{}) (interface{}, error) {
 	// Set directory ID if provided
 	if directoryId != "" {
 		s.client.DirectoryID = directoryId
+	} else {
+		// Clear any default directory ID if not specified
+		s.client.DirectoryID = ""
 	}
 
 	// Upload file

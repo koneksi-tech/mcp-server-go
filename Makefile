@@ -1,6 +1,8 @@
-.PHONY: build clean test install run deps
+.PHONY: build clean test install run deps build-api run-api build-bridge run-bridge
 
 BINARY_NAME=koneksi-mcp
+API_BINARY_NAME=koneksi-api
+BRIDGE_BINARY_NAME=koneksi-bridge
 BUILD_DIR=build
 
 build:
@@ -34,3 +36,15 @@ run:
 setup:
 	cp .env.example .env
 	@echo "Please edit .env with your Koneksi API credentials"
+
+build-api:
+	go build -o $(API_BINARY_NAME) ./cmd/koneksi-api-server
+
+run-api:
+	go run ./cmd/koneksi-api-server
+
+build-bridge:
+	go build -o $(BRIDGE_BINARY_NAME) ./cmd/koneksi-mcp-bridge
+
+run-bridge:
+	go run ./cmd/koneksi-mcp-bridge
