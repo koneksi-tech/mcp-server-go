@@ -44,9 +44,8 @@ func (s *Server) HandleRequest(requestStr string) (interface{}, error) {
 }
 
 func (s *Server) handleInitialize(id interface{}) (interface{}, error) {
-	return map[string]interface{}{
+	response := map[string]interface{}{
 		"jsonrpc": "2.0",
-		"id":      id,
 		"result": map[string]interface{}{
 			"protocolVersion": "2024-11-05",
 			"capabilities": map[string]interface{}{
@@ -57,7 +56,14 @@ func (s *Server) handleInitialize(id interface{}) (interface{}, error) {
 				"version": s.version,
 			},
 		},
-	}, nil
+	}
+	
+	// Only include ID if it's not nil
+	if id != nil {
+		response["id"] = id
+	}
+	
+	return response, nil
 }
 
 func (s *Server) handleToolsList(id interface{}) (interface{}, error) {
@@ -170,13 +176,19 @@ func (s *Server) handleToolsList(id interface{}) (interface{}, error) {
 		},
 	}
 
-	return map[string]interface{}{
+	response := map[string]interface{}{
 		"jsonrpc": "2.0",
-		"id":      id,
 		"result": map[string]interface{}{
 			"tools": tools,
 		},
-	}, nil
+	}
+	
+	// Only include ID if it's not nil
+	if id != nil {
+		response["id"] = id
+	}
+	
+	return response, nil
 }
 
 func (s *Server) handleToolCall(parsed gjson.Result, id interface{}) (interface{}, error) {

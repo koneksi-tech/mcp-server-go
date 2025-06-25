@@ -45,17 +45,38 @@ func main() {
 	// Main message loop
 	for scanner.Scan() {
 		request := scanner.Text()
+		
+		// Parse request to check if it's a notification
+		var req map[string]interface{}
+		if err := json.Unmarshal([]byte(request), &req); err != nil {
+			log.Printf("Error parsing request: %v", err)
+			continue
+		}
+		
 		response, err := server.HandleRequest(request)
 		if err != nil {
 			log.Printf("Error handling request: %v", err)
+			
+			// For notifications (no ID), don't send any response
+			if req["id"] == nil {
+				continue
+			}
+			
 			errorResponse := map[string]interface{}{
 				"jsonrpc": "2.0",
+				"id":      req["id"],
 				"error": map[string]interface{}{
 					"code":    -32603,
 					"message": err.Error(),
 				},
 			}
+			
 			encoder.Encode(errorResponse)
+			continue
+		}
+
+		// Don't send response for notifications
+		if req["id"] == nil {
 			continue
 		}
 

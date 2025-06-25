@@ -167,7 +167,8 @@ func (c *Client) DownloadFile(fileID string) (io.ReadCloser, error) {
 }
 
 func (c *Client) ListDirectories() ([]DirectoryInfo, error) {
-	endpoint := "/api/clients/v1/directories"
+	// Default to root directory
+	endpoint := "/api/clients/v1/directories/root"
 
 	req, err := http.NewRequest("GET", c.BaseURL+endpoint, nil)
 	if err != nil {

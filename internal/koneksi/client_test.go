@@ -179,6 +179,11 @@ func TestClient_ListDirectories(t *testing.T) {
 			t.Errorf("Expected GET method, got %s", r.Method)
 		}
 		
+		// Check that it's requesting the root directory
+		if !strings.HasSuffix(r.URL.Path, "/directories/root") {
+			t.Errorf("Expected path to end with /directories/root, got %s", r.URL.Path)
+		}
+		
 		response := map[string]interface{}{
 			"data": []map[string]interface{}{
 				{
