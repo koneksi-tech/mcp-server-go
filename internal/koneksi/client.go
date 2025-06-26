@@ -141,6 +141,23 @@ func (c *Client) UploadFile(fileName string, fileData io.Reader, size int64, che
 	}, nil
 }
 
+func (c *Client) UploadFileFromBytes(fileName string, fileContent []byte, directoryID string) (*FileUploadResponse, error) {
+	// Create a reader from the byte array
+	reader := bytes.NewReader(fileContent)
+	
+	// Save the current directory ID and restore it after
+	originalDirID := c.DirectoryID
+	if directoryID != "" {
+		c.DirectoryID = directoryID
+	}
+	defer func() {
+		c.DirectoryID = originalDirID
+	}()
+	
+	// Use the existing UploadFile method
+	return c.UploadFile(fileName, reader, int64(len(fileContent)), "")
+}
+
 func (c *Client) DownloadFile(fileID string) (io.ReadCloser, error) {
 	endpoint := fmt.Sprintf("/api/clients/v1/files/%s/download", fileID)
 	
@@ -191,13 +208,25 @@ func (c *Client) ListDirectories() ([]DirectoryInfo, error) {
 	}
 
 	var apiResp struct {
-		Data []struct {
-			ID          string `json:"id"`
-			Name        string `json:"name"`
-			Description string `json:"description"`
-			CreatedAt   string `json:"created_at"`
-			FileCount   int    `json:"file_count"`
-			TotalSize   int64  `json:"total_size"`
+		Data struct {
+			Directory struct {
+				ID        string `json:"id"`
+				Name      string `json:"name"`
+				Size      int64  `json:"size"`
+				CreatedAt string `json:"createdAt"`
+			} `json:"directory"`
+			Subdirectories []struct {
+				ID        string `json:"id"`
+				Name      string `json:"name"`
+				Size      int64  `json:"size"`
+				CreatedAt string `json:"createdAt"`
+				UpdatedAt string `json:"updatedAt"`
+			} `json:"subdirectories"`
+			Files []struct {
+				ID   string `json:"id"`
+				Name string `json:"name"`
+				Size int64  `json:"size"`
+			} `json:"files"`
 		} `json:"data"`
 	}
 
@@ -205,16 +234,29 @@ func (c *Client) ListDirectories() ([]DirectoryInfo, error) {
 		return nil, fmt.Errorf("failed to parse response: %w", err)
 	}
 
-	directories := make([]DirectoryInfo, 0, len(apiResp.Data))
-	for _, dir := range apiResp.Data {
+	// Include the root directory itself
+	rootCreatedAt, _ := time.Parse(time.RFC3339, apiResp.Data.Directory.CreatedAt)
+	directories := []DirectoryInfo{
+		{
+			ID:          apiResp.Data.Directory.ID,
+			Name:        apiResp.Data.Directory.Name,
+			Description: "Root directory",
+			CreatedAt:   rootCreatedAt,
+			FileCount:   len(apiResp.Data.Files),
+			TotalSize:   apiResp.Data.Directory.Size,
+		},
+	}
+
+	// Add all subdirectories
+	for _, dir := range apiResp.Data.Subdirectories {
 		createdAt, _ := time.Parse(time.RFC3339, dir.CreatedAt)
 		directories = append(directories, DirectoryInfo{
 			ID:          dir.ID,
 			Name:        dir.Name,
-			Description: dir.Description,
+			Description: "", // Description not provided in this endpoint
 			CreatedAt:   createdAt,
-			FileCount:   dir.FileCount,
-			TotalSize:   dir.TotalSize,
+			FileCount:   0,  // File count not provided for subdirectories
+			TotalSize:   dir.Size,
 		})
 	}
 

@@ -92,7 +92,7 @@ func TestServer_HandleToolsList(t *testing.T) {
 	
 	expectedTools := []string{
 		"upload_file", "download_file", "list_directories", 
-		"create_directory", "search_files", "backup_file",
+		"create_directory", "search_files", "upload_content", "backup_file",
 	}
 	
 	if len(tools) != len(expectedTools) {
@@ -119,15 +119,23 @@ func TestServer_HandleToolsList(t *testing.T) {
 func TestServer_HandleToolCall_ListDirectories(t *testing.T) {
 	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		response := map[string]interface{}{
-			"data": []map[string]interface{}{
-				{
-					"id":          "dir1",
-					"name":        "Test Directory",
-					"description": "A test directory",
-					"created_at":  "2023-01-01T00:00:00Z",
-					"file_count":  5,
-					"total_size":  1024,
+			"data": map[string]interface{}{
+				"directory": map[string]interface{}{
+					"id":        "root",
+					"name":      "root",
+					"size":      1024,
+					"createdAt": "2023-01-01T00:00:00Z",
 				},
+				"subdirectories": []map[string]interface{}{
+					{
+						"id":        "dir1",
+						"name":      "Test Directory",
+						"size":      1024,
+						"createdAt": "2023-01-01T00:00:00Z",
+						"updatedAt": "2023-01-01T00:00:00Z",
+					},
+				},
+				"files": []map[string]interface{}{},
 			},
 		}
 		w.WriteHeader(http.StatusOK)

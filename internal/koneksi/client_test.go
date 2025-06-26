@@ -185,22 +185,35 @@ func TestClient_ListDirectories(t *testing.T) {
 		}
 		
 		response := map[string]interface{}{
-			"data": []map[string]interface{}{
-				{
-					"id":          "dir1",
-					"name":        "Directory 1",
-					"description": "Test directory 1",
-					"created_at":  "2023-01-01T00:00:00Z",
-					"file_count":  5,
-					"total_size":  1024,
+			"data": map[string]interface{}{
+				"directory": map[string]interface{}{
+					"id":        "root",
+					"name":      "root",
+					"size":      3072,
+					"createdAt": "2023-01-01T00:00:00Z",
 				},
-				{
-					"id":          "dir2",
-					"name":        "Directory 2",
-					"description": "Test directory 2",
-					"created_at":  "2023-01-02T00:00:00Z",
-					"file_count":  10,
-					"total_size":  2048,
+				"subdirectories": []map[string]interface{}{
+					{
+						"id":        "dir1",
+						"name":      "Directory 1",
+						"size":      1024,
+						"createdAt": "2023-01-01T00:00:00Z",
+						"updatedAt": "2023-01-01T00:00:00Z",
+					},
+					{
+						"id":        "dir2",
+						"name":      "Directory 2",
+						"size":      2048,
+						"createdAt": "2023-01-02T00:00:00Z",
+						"updatedAt": "2023-01-02T00:00:00Z",
+					},
+				},
+				"files": []map[string]interface{}{
+					{
+						"id":   "file1",
+						"name": "file1.txt",
+						"size": 100,
+					},
 				},
 			},
 		}
@@ -217,15 +230,24 @@ func TestClient_ListDirectories(t *testing.T) {
 		t.Fatalf("Unexpected error: %v", err)
 	}
 	
-	if len(directories) != 2 {
-		t.Errorf("Expected 2 directories, got %d", len(directories))
+	if len(directories) != 3 {
+		t.Errorf("Expected 3 directories (root + 2 subdirs), got %d", len(directories))
 	}
 	
-	if directories[0].ID != "dir1" {
-		t.Errorf("Expected first directory ID to be dir1, got %s", directories[0].ID)
+	// Check root directory
+	if directories[0].ID != "root" {
+		t.Errorf("Expected first directory ID to be root, got %s", directories[0].ID)
 	}
-	if directories[1].FileCount != 10 {
-		t.Errorf("Expected second directory file count to be 10, got %d", directories[1].FileCount)
+	if directories[0].FileCount != 1 {
+		t.Errorf("Expected root directory file count to be 1, got %d", directories[0].FileCount)
+	}
+	
+	// Check subdirectories
+	if directories[1].ID != "dir1" {
+		t.Errorf("Expected second directory ID to be dir1, got %s", directories[1].ID)
+	}
+	if directories[2].TotalSize != 2048 {
+		t.Errorf("Expected third directory size to be 2048, got %d", directories[2].TotalSize)
 	}
 }
 

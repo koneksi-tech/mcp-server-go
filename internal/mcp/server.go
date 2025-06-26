@@ -1,6 +1,7 @@
 package mcp
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -145,6 +146,28 @@ func (s *Server) handleToolsList(id interface{}) (interface{}, error) {
 			},
 		},
 		{
+			"name":        "upload_content",
+			"description": "Upload content directly to Koneksi Storage (for attached files)",
+			"inputSchema": map[string]interface{}{
+				"type": "object",
+				"properties": map[string]interface{}{
+					"fileName": map[string]interface{}{
+						"type":        "string",
+						"description": "Name for the file",
+					},
+					"content": map[string]interface{}{
+						"type":        "string",
+						"description": "Base64 encoded file content",
+					},
+					"directoryId": map[string]interface{}{
+						"type":        "string",
+						"description": "Directory ID to upload to (optional)",
+					},
+				},
+				"required": []string{"fileName", "content"},
+			},
+		},
+		{
 			"name":        "backup_file",
 			"description": "Backup a file with optional compression and encryption",
 			"inputSchema": map[string]interface{}{
@@ -206,6 +229,8 @@ func (s *Server) handleToolCall(parsed gjson.Result, id interface{}) (interface{
 	switch toolName {
 	case "upload_file":
 		result, err = s.uploadFile(arguments)
+	case "upload_content":
+		result, err = s.uploadContent(arguments)
 	case "download_file":
 		result, err = s.downloadFile(arguments)
 	case "list_directories":
@@ -266,6 +291,44 @@ func (s *Server) uploadFile(args map[string]interface{}) (interface{}, error) {
 	}
 
 	content := fmt.Sprintf("File uploaded successfully!\nFile ID: %s\nFile Name: %s\nSize: %d bytes", 
+		resp.FileID, resp.FileName, resp.Size)
+
+	return map[string]interface{}{
+		"content": []map[string]interface{}{
+			{
+				"type": "text",
+				"text": content,
+			},
+		},
+	}, nil
+}
+
+func (s *Server) uploadContent(args map[string]interface{}) (interface{}, error) {
+	fileName, ok := args["fileName"].(string)
+	if !ok {
+		return nil, fmt.Errorf("fileName is required")
+	}
+
+	contentBase64, ok := args["content"].(string)
+	if !ok {
+		return nil, fmt.Errorf("content is required")
+	}
+
+	directoryId, _ := args["directoryId"].(string)
+
+	// Decode base64 content
+	fileContent, err := base64.StdEncoding.DecodeString(contentBase64)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode base64 content: %w", err)
+	}
+
+	// Upload using the new method
+	resp, err := s.client.UploadFileFromBytes(fileName, fileContent, directoryId)
+	if err != nil {
+		return nil, fmt.Errorf("failed to upload content: %w", err)
+	}
+
+	content := fmt.Sprintf("Content uploaded successfully!\nFile ID: %s\nFile Name: %s\nSize: %d bytes", 
 		resp.FileID, resp.FileName, resp.Size)
 
 	return map[string]interface{}{

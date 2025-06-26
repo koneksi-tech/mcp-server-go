@@ -82,7 +82,12 @@ Add the server to your Claude Desktop configuration (`claude_desktop_config.json
 5. **search_files**: List files in a directory
    - `directoryId`: Directory ID to search in
 
-6. **backup_file**: Backup a file with optional compression and encryption
+6. **upload_content**: Upload content directly (for attached files in Claude)
+   - `fileName`: Name for the file
+   - `content`: Base64 encoded file content
+   - `directoryId`: (Optional) Directory ID to upload to
+
+7. **backup_file**: Backup a file with optional compression and encryption
    - `filePath`: Path to the file to backup
    - `directoryId`: (Optional) Directory ID to backup to
    - `compress`: (Optional) Compress the file before backup
